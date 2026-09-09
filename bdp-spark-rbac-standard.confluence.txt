@@ -1,0 +1,514 @@
+{info:title=How to use this page}
+This page defines the mandatory onboarding and access-management standard for all BDP Spark namespaces. Namespaces that do not comply with this standard will not be approved for onboarding, and will not receive automated RoleBindings.
+{info}
+
+{color:#707070}GIF PLACEHOLDER - delete this line, then type /giphy in the editor (search: "automation" or "robot"), or paste a Giphy share link directly.{color}
+
+h2. Document Information
+
+||Attribute||Value||
+|Status|Draft|
+|Version|0.1|
+|Owner|OCP Platform Team (CAAS)|
+|Business Sponsor|BDP Team|
+|Stakeholders|BDP Team, Security Team, Identity and Access Management|
+|Platforms Covered|BDP Spark|
+|Environments Covered|QA, UAT, PROD|
+|Primary Purpose|Standardized namespace onboarding and automated RBAC access management|
+|Access Model|LDAP/OUD group-based authorization|
+|RBAC Provisioning Method|Fully automated|
+|Required Metadata Label|{{pnc.net/oud-group}}|
+|Last Reviewed| |
+
+{toc:maxLevel=2|minLevel=2}
+
+----
+
+h2. 1. Overview
+
+The BDP Spark platform uses a fully automated Role-Based Access Control (RBAC) framework that provisions namespace access through enterprise LDAP/OUD groups.
+
+This standard defines the required namespace naming conventions, LDAP/OUD group standards, namespace metadata requirements, onboarding procedures, and governance controls that must be followed for all BDP Spark namespaces.
+
+The goals of this standard are:
+
+* Consistent namespace onboarding
+* Automated RBAC provisioning
+* Reduced operational effort
+* Improved security governance
+* Centralized access management
+* Improved auditability and compliance
+* Self-service access visibility
+
+Once a namespace has been onboarded according to this standard, the RBAC Automation Framework automatically provisions and maintains the required RoleBindings.
+
+h2. 2. Scope
+
+This standard applies to:
+
+||In scope||Notes||
+|All BDP Spark namespaces|QA, UAT and PROD|
+|User-access namespaces|{{users}} access type|
+|Application namespaces|{{apps}} access type|
+|Service account access|Provisioned via the {{apps}} access type|
+|Automated workloads|Provisioned via the {{apps}} access type|
+|ETL workloads|Provisioned via the {{apps}} access type|
+
+h2. 3. Guiding Principles
+
+h3. 3.1 Group-Based Authorization
+
+Access is granted through enterprise LDAP/OUD groups. Users are added to approved LDAP/OUD groups rather than being granted direct namespace permissions.
+
+h3. 3.2 Metadata-Driven Provisioning
+
+RBAC provisioning is driven by namespace metadata. The label applied to a namespace tells the platform automation which LDAP/OUD group should receive access to that namespace.
+
+h3. 3.3 Automation First
+
+All namespace RoleBindings are created automatically by the RBAC Automation Framework. Manual RBAC administration is permitted only during approved break-glass situations.
+
+h3. 3.4 Separation of Duties
+
+The BDP Team owns access approvals and LDAP/OUD group administration. The OCP Platform Team owns namespace provisioning and RBAC automation. Neither team performs both functions.
+
+h3. 3.5 Auditability
+
+Every namespace access assignment must be traceable to namespace metadata, LDAP/OUD group ownership, business ownership, and platform automation activity.
+
+h2. 4. Supported Environments
+
+||Environment||Namespace suffix||Description||
+|QA|{{qa}}|Functional testing, integration testing and validation activities|
+|UAT|{{uat}}|User acceptance testing and business validation|
+|PROD|{{prod}}|Production workloads and business operations|
+
+{note:title=Approved environment values}
+Only {{qa}}, {{uat}} and {{prod}} are valid. No other environment values are permitted in a BDP Spark namespace name.
+{note}
+
+h2. 5. Namespace Naming Standard
+
+h3. 5.1 Format
+
+{noformat}
+bdp-spark-<GROUP_NAME>-<ACCESS_TYPE>-<ENVIRONMENT>
+{noformat}
+
+h3. 5.2 Components
+
+||Component||Definition||Permitted values||
+|{{bdp-spark}}|Fixed platform prefix|Literal|
+|{{GROUP_NAME}}|Business-aligned ownership boundary|See section 6|
+|{{ACCESS_TYPE}}|Intended access consumer|{{users}}, {{apps}}|
+|{{ENVIRONMENT}}|Deployment tier|{{qa}}, {{uat}}, {{prod}}|
+
+h3. 5.3 Access Type Definitions
+
+||Value||Definition||
+|{{users}}|Interactive user access|
+|{{apps}}|Applications, service accounts, automation, APIs and ETL workloads|
+
+h3. 5.4 Naming Derivation Chain
+
+Every artifact in this standard is derived mechanically from three inputs. Given a business group, an access type and an environment, there is exactly one valid namespace name, one valid LDAP/OUD group, and one valid label value.
+
+{noformat}
+INPUTS
+  Business group ..... cibamg
+  Access type ........ apps
+  Environment ........ qa
+
+DERIVED NAMESPACE
+  bdp-spark  +  cibamg  +  apps  +  qa
+  => bdp-spark-cibamg-apps-qa
+
+DERIVED LDAP/OUD GROUP   (no environment component - see section 19)
+  app-bdp-rbac-spark  +  cibamg  +  apps
+  => app-bdp-rbac-spark-cibamg-apps
+
+DERIVED NAMESPACE LABEL
+  pnc.net/oud-group: app-bdp-rbac-spark-cibamg-apps
+{noformat}
+
+h2. 6. Approved Business Groups
+
+The following business group identifiers are approved for BDP Spark namespace onboarding. The namespace and LDAP/OUD group values below are derived, not chosen.
+
+||Business group||Namespace pattern||LDAP/OUD group pattern||
+|cibamg|bdp-spark-cibamg-\<type\>-\<env\>|app-bdp-rbac-spark-cibamg-\<type\>|
+|cibamgnrt|bdp-spark-cibamgnrt-\<type\>-\<env\>|app-bdp-rbac-spark-cibamgnrt-\<type\>|
+|dna|bdp-spark-dna-\<type\>-\<env\>|app-bdp-rbac-spark-dna-\<type\>|
+|dnanrt|bdp-spark-dnanrt-\<type\>-\<env\>|app-bdp-rbac-spark-dnanrt-\<type\>|
+|retlend|bdp-spark-retlend-\<type\>-\<env\>|app-bdp-rbac-spark-retlend-\<type\>|
+|entwt|bdp-spark-entwt-\<type\>-\<env\>|app-bdp-rbac-spark-entwt-\<type\>|
+|fraud|bdp-spark-fraud-\<type\>-\<env\>|app-bdp-rbac-spark-fraud-\<type\>|
+|corpfunc|bdp-spark-corpfunc-\<type\>-\<env\>|app-bdp-rbac-spark-corpfunc-\<type\>|
+|tech|bdp-spark-tech-\<type\>-\<env\>|app-bdp-rbac-spark-tech-\<type\>|
+|bsam|bdp-spark-bsam-\<type\>-\<env\>|app-bdp-rbac-spark-bsam-\<type\>|
+
+h3. 6.1 Naming Requirements
+
+Business group identifiers must:
+
+* (/) Be lowercase
+* (/) Contain no spaces
+* (/) Contain no hyphens
+* (/) Follow the approved business naming standard
+
+{tip:title=Why hyphens are not permitted inside a group name}
+The hyphen is the field delimiter for both the namespace name and the LDAP/OUD group name. A hyphen inside {{GROUP_NAME}} would make the name ambiguous to parse, and automation could not reliably determine where the group name ends and the access type begins.
+{tip}
+
+h3. 6.2 Valid and Invalid Examples
+
+||Valid||Invalid||
+|cibamg|cib-amg|
+|retlend|ret-lending|
+|corpfunc|corp-functions|
+
+h2. 7. Namespace Examples
+
+h3. 7.1 User Namespaces
+
+{noformat}
+bdp-spark-cibamg-users-qa
+bdp-spark-tech-users-uat
+bdp-spark-fraud-users-prod
+bdp-spark-bsam-users-qa
+{noformat}
+
+h3. 7.2 Application Namespaces
+
+{noformat}
+bdp-spark-cibamg-apps-qa
+bdp-spark-entwt-apps-prod
+bdp-spark-dna-apps-uat
+bdp-spark-retlend-apps-prod
+{noformat}
+
+h2. 8. LDAP/OUD Group Standards
+
+Namespace authorization is controlled through enterprise LDAP/OUD groups. The LDAP/OUD group referenced in namespace metadata is the authoritative access source for that namespace.
+
+h3. 8.1 Format
+
+{noformat}
+app-bdp-rbac-spark-<GROUP_NAME>-<ACCESS_TYPE>
+{noformat}
+
+h3. 8.2 User Access Groups
+
+{noformat}
+app-bdp-rbac-spark-cibamg-users
+app-bdp-rbac-spark-tech-users
+app-bdp-rbac-spark-fraud-users
+app-bdp-rbac-spark-corpfunc-users
+{noformat}
+
+h3. 8.3 Application Access Groups
+
+{noformat}
+app-bdp-rbac-spark-cibamg-apps
+app-bdp-rbac-spark-entwt-apps
+app-bdp-rbac-spark-dna-apps
+app-bdp-rbac-spark-retlend-apps
+{noformat}
+
+h2. 9. Namespace Metadata Requirements
+
+Every BDP Spark namespace must carry a valid LDAP/OUD group metadata label.
+
+h3. 9.1 Required Label
+
+{noformat}
+pnc.net/oud-group
+{noformat}
+
+h3. 9.2 Label Requirements
+
+The label value must:
+
+* Reference a valid, existing LDAP/OUD group
+* Match the group naming standard in section 8
+* Represent the group that should receive access to the namespace
+* Be present at onboarding time
+
+h3. 9.3 Examples
+
+{code:language=yaml|title=User namespace label}
+metadata:
+  labels:
+    pnc.net/oud-group: app-bdp-rbac-spark-cibamg-users
+{code}
+
+{code:language=yaml|title=Application namespace label}
+metadata:
+  labels:
+    pnc.net/oud-group: app-bdp-rbac-spark-cibamg-apps
+{code}
+
+{warning:title=Namespaces without a valid label receive no access}
+A namespace created without a valid {{pnc.net/oud-group}} label will not receive RoleBindings.
+
+The namespace itself is created successfully, but no users, applications or service accounts will be granted access until a valid LDAP/OUD group label is configured.
+{warning}
+
+h2. 10. Complete Namespace Examples
+
+{code:language=yaml|title=User namespace - QA}
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: bdp-spark-cibamg-users-qa
+  labels:
+    pnc.net/oud-group: app-bdp-rbac-spark-cibamg-users
+{code}
+
+{code:language=yaml|title=Application namespace - QA}
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: bdp-spark-cibamg-apps-qa
+  labels:
+    pnc.net/oud-group: app-bdp-rbac-spark-cibamg-apps
+{code}
+
+{code:language=yaml|title=Application namespace - PROD}
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: bdp-spark-entwt-apps-prod
+  labels:
+    pnc.net/oud-group: app-bdp-rbac-spark-entwt-apps
+{code}
+
+h2. 11. Automated RBAC Provisioning Workflow
+
+The RBAC Automation Framework continuously evaluates namespace metadata and provisions access automatically. The diagram below shows ownership of each step and both outcomes of label validation.
+
+{code:title=BDP Spark RBAC provisioning flow}
+ BDP TEAM              OCP PLATFORM TEAM           RBAC AUTOMATION FRAMEWORK
+ ========              =================           =========================
+
+ [1] Create LDAP/OUD
+     group
+       |
+       v
+ [2] Submit namespace
+     onboarding request
+       |
+       +------------> [3] Provision namespace
+                            |
+                            v
+                      [4] Apply label
+                          pnc.net/oud-group
+                            |
+                            +-------------> [5] Detect namespace
+                                                  |
+                                                  v
+                                            [6] Validate label and
+                                                LDAP/OUD group
+                                                  |
+                                    +-------------+--------------+
+                                    | VALID                      | MISSING or INVALID
+                                    v                            v
+                              [7] Create RoleBinding       [7a] No RoleBinding
+                                  group to role                 created. Namespace
+                                    |                           exists with no access
+                                    v                            |
+                              [8] Access provisioned             v
+                                    |                      [8a] Correct the label.
+                                    v                           Automation retries
+                              [9] Reconcile continuously        on next reconcile
+                                  Drift corrected on
+                                  every pass
+{code}
+
+h3. 11.1 Step Reference
+
+||Step||Owner||Trigger||Result||
+|1|BDP Team|Onboarding request initiated|LDAP/OUD group exists and is owned|
+|2|BDP Team|Group created|Namespace request submitted with required fields|
+|3|OCP Platform Team|Request approved|Namespace created|
+|4|OCP Platform Team|Namespace created|{{pnc.net/oud-group}} label applied|
+|5|Automation|Namespace event or reconcile interval|Namespace discovered|
+|6|Automation|Namespace discovered|Label and group validated|
+|7|Automation|Validation passed|RoleBinding created or updated|
+|7a|Automation|Validation failed|No RoleBinding created; namespace has no access|
+|8|Automation|RoleBinding created|Group members hold namespace access|
+|9|Automation|Every reconcile pass|Manual drift corrected automatically|
+
+h3. 11.2 Automated Functions
+
+The platform automatically performs:
+
+* Namespace discovery
+* Label validation
+* LDAP/OUD group validation
+* RoleBinding creation
+* Namespace access assignment
+* Access reconciliation
+* Compliance verification
+
+h2. 12. Namespace Onboarding Process
+
+||Step||Activity||Owner||Output||
+|1|Create and take ownership of the LDAP/OUD group|BDP Team|e.g. app-bdp-rbac-spark-cibamg-apps|
+|2|Submit namespace onboarding request|BDP Team|Completed request (section 13)|
+|3|Provision the namespace|OCP Platform Team|Namespace created|
+|4|Apply the required metadata label|OCP Platform Team|{{pnc.net/oud-group}} set|
+|5|RBAC automation provisions access|Automation|RoleBinding created|
+|6|Operational validation and sign-off|BDP Team and OCP Platform Team|Onboarding closed|
+
+h2. 13. Namespace Request Template
+
+{noformat}
+Platform:          BDP Spark
+Namespace:         bdp-spark-cibamg-apps-qa
+Environment:       QA
+Business Owner:    <Owner Name>
+Technical Owner:   <Owner Name>
+LDAP/OUD Group:    app-bdp-rbac-spark-cibamg-apps
+Support Team:      <Team Name>
+Purpose:           Spark workload namespace supporting CIB AMG applications.
+{noformat}
+
+h2. 14. Pre-Onboarding Validation Checklist
+
+All items must be confirmed before onboarding approval is granted.
+
+||#||Validation item||Owner||Confirmed (Y/N)||Evidence / Notes||
+|1|LDAP/OUD group created|BDP Team| | |
+|2|LDAP/OUD group ownership established|BDP Team| | |
+|3|Business owner identified|BDP Team| | |
+|4|Technical owner identified|BDP Team| | |
+|5|Namespace name validated against section 5|OCP Platform Team| | |
+|6|Environment validated against section 4|OCP Platform Team| | |
+|7|Metadata label value provided|BDP Team| | |
+|8|Security approval completed|Security Team| | |
+|9|Support model documented|BDP Team| | |
+|10|Naming standards verified|OCP Platform Team| | |
+
+h2. 15. Operational Validation
+
+Run the following after onboarding to confirm the namespace is correctly configured and access has been provisioned.
+
+h3. 15.1 Verify the Namespace Label
+
+{code:language=bash}
+oc get namespace bdp-spark-cibamg-apps-qa --show-labels
+{code}
+
+Expected to include:
+
+{noformat}
+pnc.net/oud-group=app-bdp-rbac-spark-cibamg-apps
+{noformat}
+
+h3. 15.2 Verify RoleBindings Exist
+
+{code:language=bash}
+oc get rolebindings -n bdp-spark-cibamg-apps-qa
+{code}
+
+h3. 15.3 Verify the LDAP/OUD Group Assignment
+
+{code:language=bash}
+oc describe rolebinding <rolebinding-name> -n bdp-spark-cibamg-apps-qa
+{code}
+
+Expected subject:
+
+{noformat}
+app-bdp-rbac-spark-cibamg-apps
+{noformat}
+
+h3. 15.4 Verify the Group Exists in the Cluster
+
+{code:language=bash}
+oc get group app-bdp-rbac-spark-cibamg-apps
+{code}
+
+{note}
+If the group is not present in the cluster, LDAP/OUD synchronization has not yet run or the group name does not match the standard. RoleBindings referencing a non-existent group will be created but will grant no effective access.
+{note}
+
+h2. 16. Roles and Responsibilities
+
+||Activity||BDP Team||OCP Platform Team||
+|LDAP/OUD group creation|(/)| |
+|LDAP/OUD group ownership|(/)| |
+|Group membership management|(/)| |
+|User onboarding and offboarding|(/)| |
+|Access approvals|(/)| |
+|Security compliance|(/)| |
+|Namespace provisioning| |(/)|
+|Namespace lifecycle management| |(/)|
+|Namespace metadata configuration| |(/)|
+|RBAC automation| |(/)|
+|Role creation| |(/)|
+|RoleBinding creation| |(/)|
+|Operational support| |(/)|
+|Governance enforcement| |(/)|
+
+h2. 17. Self-Service Access Visibility
+
+The Spark RBAC platform includes a self-service access visibility capability. Users can review:
+
+* Current namespace access
+* LDAP/OUD group memberships
+* Authorized Spark namespaces
+* Namespace ownership information
+* Group-to-namespace mappings
+* Assigned permissions
+
+{info:title=The portal is informational only}
+Access requests, approvals, group membership changes and entitlement management remain governed through approved LDAP/OUD administration processes. The portal does not grant, modify or revoke access.
+{info}
+
+h2. 18. Security and Governance
+
+The BDP Spark RBAC framework provides:
+
+* Group-based authorization
+* Centralized identity governance
+* Automated access provisioning
+* Reduced manual administration
+* Auditable access assignments
+* Consistent namespace onboarding
+* Clear ownership accountability
+
+All namespaces must comply with this standard before onboarding approval is granted.
+
+h2. 19. Open Items and Decisions Required
+
+These items must be resolved before this page moves from Draft to Approved.
+
+||#||Open item||Impact||Owner||Status||
+|1|LDAP/OUD group names contain no environment component. A single group (e.g. app-bdp-rbac-spark-cibamg-apps) grants access to the QA, UAT and PROD namespaces for that business group.|Environment separation of duties cannot be enforced through group membership. PROD access cannot be approved independently of QA access.|BDP Team / Security|Open|
+|2|The standard does not define which Role or ClusterRole is bound for each access type.|Two namespaces onboarded correctly could receive different permission levels.|OCP Platform Team|Open|
+|3|Reconciliation behaviour on label change or removal is undefined. It is not stated whether the previous RoleBinding is removed.|Risk of orphaned access surviving a group reassignment.|OCP Platform Team|Open|
+|4|Break-glass manual RBAC administration is referenced in section 3.3 but no approval path, time limit or revert procedure is defined.|Manual changes may persist undetected or be reverted by reconciliation mid-incident.|OCP Platform Team / Security|Open|
+|5|Approved business groups in section 6 have no recorded business or technical owner.|Access assignments cannot be traced to business ownership, which section 3.5 requires.|BDP Team|Open|
+
+h2. 20. Summary
+
+The BDP Spark RBAC Automation Framework provides a secure, scalable and fully automated namespace access management model.
+
+Namespace access is driven entirely through the required metadata label:
+
+{noformat}
+pnc.net/oud-group
+{noformat}
+
+By associating a namespace with an approved LDAP/OUD group, the platform automatically provisions and maintains the required OpenShift RoleBindings, delivering a consistent, auditable and enterprise-aligned access management experience across QA, UAT and PROD.
+
+{color:#707070}GIF PLACEHOLDER - delete this line, then type /giphy in the editor (search: "shipped" or "mic drop").{color}
+
+----
+
+h2. Document History
+
+||Version||Date||Author||Change||
+|0.1| | |Initial draft|

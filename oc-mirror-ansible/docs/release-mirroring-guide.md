@@ -798,6 +798,39 @@ To take the cluster from 4.18.17 to 4.20.x and then 4.22.x on EUS channels, mirr
 
 Source: [endoflife.date](https://github.com/endoflife-date/endoflife.date/blob/master/products/red-hat-openshift.md); confirm against Red Hat's [life cycle policy](https://access.redhat.com/support/policy/updates/openshift). 4.18.17 is 39 z-streams behind 4.18.56, so the update path may first go to a later 4.18 release. The dry-run in item 3 shows this, and `shortestPath` mirrors it.
 
+### Recommended: mirror the whole path back to back
+
+Mirror everything from 4.18.17 to the latest 4.22.x now, in consecutive runs, **before** any cluster is updated. Then every artifact for every hop is already in the registry when the update windows come, and each cluster jump only needs the cluster-side steps.
+
+**Release images (two runs, one after the other)**
+
+| Run | Channel | From | To | Workspace |
+| --- | --- | --- | --- | --- |
+| A | `eus-4.20` | 4.18.17 | latest 4.20.z that is also in `eus-4.22` | `workspace-run-a` |
+| B | `eus-4.22` | that same 4.20.z | latest 4.22.z (4.22.16 when last checked) | `workspace-run-b` |
+
+Both runs use `shortest_path=true`, so the 4.19/4.21 hops and any extra 4.18.z/4.20.z the update graph needs are included. Run B goes last, so its update graph covers the whole path. If `eus-4.22` isn't open yet, Run B becomes B1 (`stable-4.21`) and B2 (`stable-4.22`), as described below.
+
+**Operator catalogs (catalog guide, one run per version and group)**
+
+- Red Hat group: `v4.18`, `v4.20`, `v4.22`.
+- Partner group (with `--remove-signatures`): the same three versions.
+- `v4.19` / `v4.21`: only if an operator's owner says it needs them.
+
+**Why the runs don't overwrite each other**
+
+- **Registry:** additive only. Each release and catalog version has its own tags, images are stored by digest, and nothing is deleted unless someone runs oc-mirror's separate `delete` command. The shared cache means each run downloads only what's new.
+- **Workspaces:** each run has its own, so their generated cluster files stay separate.
+- **Cluster:** nothing is applied during the mirroring, so nothing can collide. When the admin later applies the folders, each one's IDMS/ITMS and signature ConfigMap are renamed first (item 6 below), so all of them coexist on the cluster.
+
+**Before the real runs**
+
+1. **Pick the versions** with the channel listing in item 1 below. Use the latest 4.20.z that appears in both EUS channels.
+2. **Dry-run every run** (two release runs and up to six catalog runs), add up the image counts, and get the disk sized before starting. Disk is the biggest risk when mirroring the whole path at once.
+3. **Run them in tmux, one after another:** release A, release B, then the catalogs. If one fails, rerun just that one; the cache keeps what's already copied.
+
+**Keep in mind:** "latest 4.22.x" moves on before the cluster actually updates. When the update window comes, top up with one short extra run from your mirrored 4.22.z to the then-latest 4.22.z (same channel, `shortest_path=true`, a new workspace). Thanks to the cache, that run is small.
+
 ### Why one channel can't do it
 
 1. **oc-mirror only mirrors versions that are in the channel you name.** It walks the update graph of that one channel from min to max. An EUS channel reaches back to the previous EUS release: Red Hat's own oc-mirror v2 example uses `eus-4.14` with `minVersion: 4.12.28`. So `eus-4.20` can start at 4.18.17, but `eus-4.22` starts at 4.20 and doesn't contain 4.18. Check this with the command in item 1 below.

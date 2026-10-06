@@ -1,0 +1,14 @@
+# SAMPLE ONLY: IBM Fusion 2.14's sample setup. Replace with your Step 1 inventory.
+# Certified catalog (run with --remove-signatures).
+catalog_group: partner
+operator_catalogs:
+  - name: certified-operator-index
+    packages:
+      - name: cloudnative-pg
+      - name: ibm-storage-odf-operator
+        channels:
+          - name: stable-v1.9
+      - name: ibm-block-csi-operator
+        defaultChannel: "stable-1.13.2"
+        channels:
+          - name: stable-1.13.2

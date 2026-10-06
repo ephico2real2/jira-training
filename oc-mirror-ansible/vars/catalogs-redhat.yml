@@ -1,0 +1,37 @@
+# SAMPLE ONLY: IBM Fusion 2.14's sample setup + the Update Service. Replace with your Step 1 inventory.
+# Red Hat catalog (signatures mirrored).
+catalog_group: redhat
+operator_catalogs:
+  - name: redhat-operator-index
+    packages:
+      - name: cincinnati-operator
+      - name: kubernetes-nmstate-operator
+      - name: redhat-oadp-operator
+        channels:
+          - name: stable-1.4
+            minVersion: "1.4.2-0"
+          - name: stable
+            minVersion: "1.5.0-0"
+      - name: amq-streams
+        channels:
+          - name: stable
+            minVersion: "3.0.0-0"
+      - name: nfd
+      - name: node-maintenance-operator
+      - name: rhods-operator
+      - name: openshift-cert-manager-operator
+      - name: kubevirt-hyperconverged
+      - name: metallb-operator
+      - name: multicluster-engine
+      - name: local-storage-operator
+      - name: lvms-operator
+      - name: kernel-module-management
+      - name: openshift-gitops-operator
+      - name: submariner
+      - name: advanced-cluster-management
+# Extra images; the version is filled in from catalog_ocp_version
+additional_images:
+  - registry.redhat.io/ubi9/ubi:latest
+  - registry.redhat.io/ubi9/ubi-minimal:latest
+  - registry.redhat.io/ubi9/ubi-micro:latest
+  - "registry.redhat.io/openshift4/driver-toolkit-rhel9:v{{ catalog_ocp_version }}"

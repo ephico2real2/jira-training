@@ -711,6 +711,10 @@ You need the `cluster-resources` folder from Step 9, the registry's CA certifica
 
    ```bash
    cd cluster-resources
+   # Give this run's mirror sets a unique name first (see "Mirroring an upgrade path", item 6)
+   RUN=release-4-18-17
+   sed -i -E "s/^(\s*name: )(i[dt]ms-[a-z]+-[0-9]+)\s*$/\1\2-$RUN/" i[dt]ms-oc-mirror.yaml
+   grep -h 'name: i' i[dt]ms-oc-mirror.yaml
    oc apply -f idms-oc-mirror.yaml -f itms-oc-mirror.yaml
    oc apply -f signature-configmap.yaml
    oc apply -f cs-redhat-operator-index-*.yaml
@@ -868,15 +872,16 @@ The 4.20 target ends Run A and starts Run B, so the two mirrors join without a g
      rm -f signature-configmap.json
      grep 'name: mirrored-release-signatures' signature-configmap.yaml
      ```
-   - **IDMS and ITMS:** both runs use the same resource names (for example `idms-release-0`), so Run B's replace Run A's when applied. They map whole repositories, so Run B's should cover everything Run A's did. Check before handover; this should print nothing:
+   - **IDMS and ITMS:** oc-mirror names its mirror sets by category only (`idms-release-0`, `idms-operator-0`, and so on), so every run, release or catalog, reuses the same names. Applying one run's files would replace the previous run's mappings on the cluster. Give each run's mirror sets a unique name before handover; the cluster combines the mappings from all of them:
 
      ```bash
-     cd /data/oc-mirror
-     diff <(grep -h 'source:' workspace-run-a/working-dir/cluster-resources/i*ms-*.yaml | sort -u) \
-          <(grep -h 'source:' workspace-run-b/working-dir/cluster-resources/i*ms-*.yaml | sort -u) | grep '^<'
+     cd /data/oc-mirror/workspace-run-a/working-dir/cluster-resources
+     RUN=release-run-a          # unique per run: release-run-b, release-run-b1, …
+     sed -i -E "s/^(\s*name: )(i[dt]ms-[a-z]+-[0-9]+)\s*$/\1\2-$RUN/" i[dt]ms-oc-mirror.yaml
+     grep -h 'name: i' i[dt]ms-oc-mirror.yaml
      ```
 
-     If it prints lines, apply Run A's IDMS/ITMS under new names too, and tell your lead.
+     Repeat in every run's folder. The catalog guide uses the same step, so release and catalog mirror sets never collide.
    - **Update Service:** use `updateService.yaml` from Run B. Run B also refreshes `openshift/graph-image`.
    - **Operator catalogs:** Run A mirrors the Update Service operator from the v4.18 catalog and Run B from v4.20. Mirroring the operator once is enough, but each cluster version will want its own catalog (v4.20, v4.22) for any operators you run. That's a separate mirror.
 7. **Update the cluster, one EUS jump at a time** (cluster admin, own change). Red Hat's Control Plane Only procedure, for each jump (4.18 → 4.20, then 4.20 → 4.22):
@@ -916,7 +921,7 @@ Your team has agreed that the second jump may use stable channels if `eus-4.22` 
 
    Check the results as in item 3 (use `for r in a b1 b2`). Each run should list its min and max, plus any releases in between that the graph needs.
 3. **Run for real** in order A, B1, B2, without `-e oc_mirror_dry_run=true`.
-4. **Handover** follows item 6 with three folders. Rename the signature ConfigMap in **every folder except the last one** (Run A to `mirrored-release-signatures-run-a`, Run B1 to `-run-b1`), delete their JSON copies, and run the IDMS/ITMS `diff` for A against B2 and B1 against B2. Use `updateService.yaml` from B2.
+4. **Handover** follows item 6 with three folders. Rename the signature ConfigMap in **every folder except the last one** (Run A to `mirrored-release-signatures-run-a`, Run B1 to `-run-b1`), delete their JSON copies, and give every folder's IDMS/ITMS a unique name (item 6, e.g. `release-run-a`, `release-run-b1`, `release-run-b2`). Use `updateService.yaml` from B2.
 5. **On the cluster**, the 4.20 → 4.22 jump becomes two ordinary updates:
    1. On 4.20: `oc adm upgrade channel stable-4.21`, check `oc adm upgrade` lists your 4.21 release, then update to it.
    2. On 4.21: `oc adm upgrade channel stable-4.22`, then update to your 4.22 target.

@@ -1,0 +1,9 @@
+# Secrets: never commit these, even encrypted, without review
+vars/credentials.yml
+vars/redhat-pull-secret.json
+pull-secret.txt
+.vault-pass*
+# Downloaded binaries and archives
+oc-mirror
+oc
+*.tar.gz
